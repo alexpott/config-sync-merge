@@ -1,0 +1,6 @@
+services:
+  config_sync_merge.config.storage.staging:
+    class: alexpott\ConfigSyncMerge\ConfigSyncMerge
+    decorates: config.storage.staging
+    arguments: ['@settings', '@config_sync_merge.config.storage.staging.inner']
+    public: false
