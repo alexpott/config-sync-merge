@@ -1,0 +1,24 @@
+{
+    "name": "alexpott/config-sync-merge",
+    "description": "Merge multiple Drupal config directories into a single sync storage",
+    "type": "library",
+    "license": "GPL-2.0+",
+    "authors": [
+        {
+            "name": "Alex Pott",
+            "email": "alex.a.pott@googlemail.com"
+        }
+    ],
+    "require": {
+        "drupal/core": "^8.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "alexpott\\ConfigSyncMerge\\": "src"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^6.1",
+        "mikey179/vfsStream": "^1.6"
+    }
+}
