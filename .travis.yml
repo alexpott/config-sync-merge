@@ -7,3 +7,12 @@ php:
   - hhvm
   - nightly
 
+sudo: false
+cache:
+  directories:
+    - $HOME/.composer/cache
+install:
+  - composer install --no-interaction
+  - travis_wait composer update --prefer-lowest --no-interaction
+script:
+  - ./vendor/bin/phpunit -c ./phpunit.xml.dist --coverage-text
