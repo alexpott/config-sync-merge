@@ -12,7 +12,7 @@ be changed. If configuration being saved is an exact match for configuration in
 an other directory it will not be written to your config sync directory. If the
 configuration is different, it will be written.
 
-**IMPORTANT** configuration in the deepest directory should represent a complete
+**IMPORTANT:** Configuration in the deepest directory should represent a complete
 site. This will make it easier to manage configuration removals.
 
 ## Installation
