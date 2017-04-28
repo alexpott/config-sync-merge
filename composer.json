@@ -14,7 +14,12 @@
     },
     "autoload": {
         "psr-4": {
-            "alexpott\\ConfigSyncMerge\\": "src"
+            "alexpott\\ConfigSyncMerge\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "alexpott\\ConfigSyncMerge\\Tests\\": "tests/"
         }
     },
     "require-dev": {

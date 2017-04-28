@@ -2,16 +2,18 @@
 
 namespace alexpott\ConfigSyncMerge;
 
-use Drupal\Core\Config\FileStorage;
+use alexpott\ConfigSyncMerge\Exception\InvalidStorage;
+use alexpott\ConfigSyncMerge\Exception\UnsupportedMethod;
 use Drupal\Core\Config\StorageInterface;
-use Drupal\Core\Site\Settings;
 
 /**
- * Class ConfigSyncMerge manages configuration stored in multiple config storages.
+ * Class ConfigStorage manages configuration stored in multiple config storages.
+ *
+ * Only the first storage passed in is written to or deleted from. The other storages are treated as read-only.
  *
  * @author Alex Pott
  */
-class ConfigSyncMerge implements StorageInterface {
+class ConfigStorage implements StorageInterface {
 
     /**
      * @var \Drupal\Core\Site\Settings
@@ -28,29 +30,26 @@ class ConfigSyncMerge implements StorageInterface {
     protected $storages = [];
 
     /**
-     * The storage collection.
+     * ConfigStorage constructor.
      *
-     * @var string
-     */
-    protected $collection;
-
-    /**
-     * ConfigSyncMerge constructor.
-     *
-     * @param Settings $settings
-     * @param StorageInterface $coreSyncStorage
+     * @param StorageInterface[] $storages
      * @param string $collection
+     * @throws \alexpott\ConfigSyncMerge\Exception\InvalidStorage
      */
-    public function __construct(Settings $settings, StorageInterface $coreSyncStorage, $collection = StorageInterface::DEFAULT_COLLECTION) {
-        $this->settings = $settings;
-        if ($coreSyncStorage->getCollectionName() !== $collection) {
-            $coreSyncStorage = $coreSyncStorage->createCollection($collection);
+    public function __construct(array $storages, $collection = StorageInterface::DEFAULT_COLLECTION) {
+        if (empty($storages)) {
+            throw new InvalidStorage('ConfigStorage requires at least one storage to be passed to the constructor');
         }
-        $this->storages[] = $coreSyncStorage;
-        $this->collection = $collection;
-        foreach ($this->settings->get('config_sync_merge_directories', []) as $directory) {
-            $this->storages[$directory] = new FileStorage($directory, $collection);
+        /** @var \Drupal\Core\Config\StorageInterface $storage */
+        foreach ($storages as $key => $storage) {
+            if (!($storage instanceof StorageInterface)) {
+                throw new InvalidStorage('All storages must implement \Drupal\Core\Config\StorageInterface');
+            }
+            if ($storage->getCollectionName() !== $collection) {
+                $storages[$key] = $storage->createCollection($collection);
+            }
         }
+        $this->storages = $storages;
     }
 
     /**
@@ -98,12 +97,10 @@ class ConfigSyncMerge implements StorageInterface {
      */
     public function write($name, array $data)
     {
-        foreach($this->storages as $storage) {
-            if ($storage->exists($name)) {
-                return $storage->write($name, $data);
-            }
+        // Only need to write if data is different.
+        if ($this->read($name) === $data) {
+            return TRUE;
         }
-        // Fallback to writing to the core sync directory if we are not replacing something.
         return $this->storages[0]->write($name, $data);
     }
 
@@ -112,13 +109,8 @@ class ConfigSyncMerge implements StorageInterface {
      */
     public function delete($name)
     {
-        $deleted = FALSE;
-        foreach($this->storages as $storage) {
-            if ($storage->exists($name) && $storage->delete($name)) {
-                $deleted = TRUE;
-            }
-        }
-        return $deleted;
+        // We only delete from the first storage.
+        return $this->storages[0]->delete($name);
     }
 
     /**
@@ -126,13 +118,7 @@ class ConfigSyncMerge implements StorageInterface {
      */
     public function rename($name, $new_name)
     {
-        $renamed = FALSE;
-        foreach($this->storages as $storage) {
-            if ($storage->exists($name) && $storage->rename($name, $new_name)) {
-                $renamed = TRUE;
-            }
-        }
-        return $renamed;
+        throw new UnsupportedMethod('Renaming is not supported');
     }
 
     /**
@@ -170,13 +156,8 @@ class ConfigSyncMerge implements StorageInterface {
      */
     public function deleteAll($prefix = '')
     {
-        $deleted = FALSE;
-        foreach($this->storages as $storage) {
-            if ($storage->deleteAll($prefix)) {
-                $deleted = TRUE;
-            }
-        }
-        return $deleted;
+        // We only delete from the first storage.
+        return $this->storages[0]->deleteAll($prefix);
     }
 
     /**
@@ -185,8 +166,7 @@ class ConfigSyncMerge implements StorageInterface {
     public function createCollection($collection)
     {
         return new static(
-            $this->settings,
-            $this->storages[0]->createCollection($collection),
+            $this->storages,
             $collection
         );
     }
@@ -210,8 +190,7 @@ class ConfigSyncMerge implements StorageInterface {
      */
     public function getCollectionName()
     {
-        return $this->collection;
+        return $this->storages[0]->getCollectionName();
     }
-
 
 }

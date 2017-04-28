@@ -1,6 +1,10 @@
 services:
   config_sync_merge.config.storage.staging:
-    class: alexpott\ConfigSyncMerge\ConfigSyncMerge
+    class: alexpott\ConfigSyncMerge\ConfigStorage
+    factory: config_sync_merge.factory:getSync
     decorates: config.storage.staging
+    public: false
+  config_sync_merge.factory:
+    class: alexpott\ConfigSyncMerge\ConfigSyncMergeFactory
     arguments: ['@settings', '@config_sync_merge.config.storage.staging.inner']
     public: false
