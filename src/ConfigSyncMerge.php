@@ -6,6 +6,11 @@ use Drupal\Core\Config\FileStorage;
 use Drupal\Core\Config\StorageInterface;
 use Drupal\Core\Site\Settings;
 
+/**
+ * Class ConfigSyncMerge manages configuration stored in multiple config storages.
+ *
+ * @author Alex Pott
+ */
 class ConfigSyncMerge implements StorageInterface {
 
     /**
@@ -44,10 +49,13 @@ class ConfigSyncMerge implements StorageInterface {
         $this->storages[] = $coreSyncStorage;
         $this->collection = $collection;
         foreach ($this->settings->get('config_sync_merge_directories', []) as $directory) {
-            $this->storages[] = new FileStorage($directory, $collection);
+            $this->storages[$directory] = new FileStorage($directory, $collection);
         }
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function exists($name)
     {
         foreach($this->storages as $storage) {
@@ -58,6 +66,9 @@ class ConfigSyncMerge implements StorageInterface {
         return FALSE;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function read($name)
     {
         foreach($this->storages as $storage) {
@@ -68,6 +79,9 @@ class ConfigSyncMerge implements StorageInterface {
         return FALSE;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function readMultiple(array $names)
     {
         $data = [];
@@ -79,6 +93,9 @@ class ConfigSyncMerge implements StorageInterface {
         return $data;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function write($name, array $data)
     {
         foreach($this->storages as $storage) {
@@ -90,6 +107,9 @@ class ConfigSyncMerge implements StorageInterface {
         return $this->storages[0]->write($name, $data);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function delete($name)
     {
         $deleted = FALSE;
@@ -101,6 +121,9 @@ class ConfigSyncMerge implements StorageInterface {
         return $deleted;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function rename($name, $new_name)
     {
         $renamed = FALSE;
@@ -112,16 +135,25 @@ class ConfigSyncMerge implements StorageInterface {
         return $renamed;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function encode($data)
     {
         return $this->storages[0]->encode($data);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function decode($raw)
     {
         return $this->storages[0]->decode($raw);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function listAll($prefix = '')
     {
         $list = [];
@@ -133,6 +165,9 @@ class ConfigSyncMerge implements StorageInterface {
         return $list;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function deleteAll($prefix = '')
     {
         $deleted = FALSE;
@@ -144,6 +179,9 @@ class ConfigSyncMerge implements StorageInterface {
         return $deleted;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function createCollection($collection)
     {
         return new static(
@@ -153,6 +191,9 @@ class ConfigSyncMerge implements StorageInterface {
         );
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getAllCollectionNames()
     {
         $collections = [];
@@ -164,6 +205,9 @@ class ConfigSyncMerge implements StorageInterface {
         return $collections;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getCollectionName()
     {
         return $this->collection;
