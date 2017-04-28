@@ -7,6 +7,6 @@ namespace alexpott\ConfigSyncMerge\Exception;
  *
  * @see \alexpott\ConfigSyncMerge\ConfigStorage::__construct()
  */
-class InvalidStorage extends \RuntimeException
+class InvalidStorage extends \InvalidArgumentException
 {
 }

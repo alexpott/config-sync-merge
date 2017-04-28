@@ -7,6 +7,6 @@ namespace alexpott\ConfigSyncMerge\Exception;
  *
  * @see \alexpott\ConfigSyncMerge\ConfigStorage::rename()
  */
-class UnsupportedMethod extends \RuntimeException
+class UnsupportedMethod extends \BadMethodCallException
 {
 }
