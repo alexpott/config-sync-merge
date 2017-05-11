@@ -28,19 +28,15 @@ class ConfigStorage implements StorageInterface {
      * @var \Drupal\Core\Config\StorageInterface[]
      */
     protected $storages = [];
-    /**
-     * @var array
-     */
-    private $dataAdapters;
 
     /**
      * ConfigStorage constructor.
      *
      * @param StorageInterface[] $storages
-     * @param array $dataAdapters
      * @param string $collection
+     * @throws \alexpott\ConfigSyncMerge\Exception\InvalidStorage
      */
-    public function __construct(array $storages, array $dataAdapters = [], $collection = StorageInterface::DEFAULT_COLLECTION) {
+    public function __construct(array $storages, $collection = StorageInterface::DEFAULT_COLLECTION) {
         if (empty($storages)) {
             throw new InvalidStorage('ConfigStorage requires at least one storage to be passed to the constructor');
         }
@@ -54,7 +50,6 @@ class ConfigStorage implements StorageInterface {
             }
         }
         $this->storages = $storages;
-        $this->dataAdapters = $dataAdapters;
     }
 
     /**
@@ -75,9 +70,6 @@ class ConfigStorage implements StorageInterface {
      */
     public function read($name)
     {
-        if ($dataAdapter = $this->getDataAdapter($name)) {
-            return $dataAdapter->read($name, $this->storages);
-        }
         foreach($this->storages as $storage) {
             if ($storage->exists($name)) {
                 return $storage->read($name);
@@ -92,9 +84,6 @@ class ConfigStorage implements StorageInterface {
     public function readMultiple(array $names)
     {
         $data = [];
-        if ($dataAdapter = $this->getDataAdapter($names)) {
-            $data = $dataAdapter->readMultiple($names, $this->storages);
-        }
         foreach($this->storages as $storage) {
             $names = array_diff($names, array_keys($data));
             $data = array_merge($data, $storage->readMultiple($names));
@@ -108,14 +97,8 @@ class ConfigStorage implements StorageInterface {
      */
     public function write($name, array $data)
     {
-        if ($dataAdapter = $this->getDataAdapter($name)) {
-            $data = $dataAdapter->write($name, $data, $this->storages);
-            if (empty($data)) {
-                return TRUE;
-            }
-        }
         // Only need to write if data is different.
-        elseif ($this->read($name) === $data) {
+        if ($this->read($name) === $data) {
             return TRUE;
         }
         return $this->storages[0]->write($name, $data);
@@ -184,7 +167,6 @@ class ConfigStorage implements StorageInterface {
     {
         return new static(
             $this->storages,
-            $this->dataAdapters,
             $collection
         );
     }
@@ -211,20 +193,4 @@ class ConfigStorage implements StorageInterface {
         return $this->storages[0]->getCollectionName();
     }
 
-    /**
-     * Gets a data adapter.
-     *
-     * @param $name
-     *   The configuration name being operated on.
-     *
-     * @return DataAdapterInterface|false
-     */
-    protected function getDataAdapter($name) {
-        foreach ($this->dataAdapters as $dataAdapter) {
-            if ($dataAdapter->applies($name)) {
-                return $dataAdapter;
-            }
-        }
-        return FALSE;
-    }
 }

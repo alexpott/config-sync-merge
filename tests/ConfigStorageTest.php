@@ -185,10 +185,10 @@ class ConfigStorageTest extends ConfigSyncMergeTestBase
     {
         return [
             [[], '', TRUE, []],
-            [[], 'foo', TRUE, ['core.extension']],
-            [[], 'bar', TRUE, ['core.extension', 'foo.bar']],
-            [['merge1'], '', TRUE, ['bar.foo', 'core.extension', 'foo.bar']],
-            [['merge1', 'merge2'], '', TRUE, ['baa.baa', 'bar.foo', 'core.extension', 'foo.bar']],
+            [[], 'foo', TRUE, []],
+            [[], 'bar', TRUE, ['foo.bar']],
+            [['merge1'], '', TRUE, ['bar.foo', 'foo.bar']],
+            [['merge1', 'merge2'], '', TRUE, ['baa.baa', 'bar.foo', 'foo.bar']],
         ];
     }
 
@@ -201,12 +201,12 @@ class ConfigStorageTest extends ConfigSyncMergeTestBase
         $this->assertFalse($config_sync_merge->exists('baa.baa'));
         $this->assertSame(['value' => 'fr-merge1'], $config_sync_merge->read('bar.foo'));
 
-        $config_sync_merge = new ConfigStorage($storages, [], 'fr');
+        $config_sync_merge = new ConfigStorage($storages, 'fr');
         $this->assertSame(['value' => 'fr-core'], $config_sync_merge->read('foo.bar'));
         $this->assertFalse($config_sync_merge->exists('baa.baa'));
         $this->assertSame(['value' => 'fr-merge1'], $config_sync_merge->read('bar.foo'));
 
-        $config_sync_merge = new ConfigStorage($storages, [], 'lol');
+        $config_sync_merge = new ConfigStorage($storages, 'lol');
         $this->assertSame([], $config_sync_merge->listAll());
         $config_sync_merge = new ConfigStorage($storages);
         $this->assertSame([], $config_sync_merge->createCollection('lol')->listAll());
@@ -220,10 +220,10 @@ class ConfigStorageTest extends ConfigSyncMergeTestBase
         $config_sync_merge = $config_sync_merge->createCollection('fr');
         $this->assertSame('fr', $config_sync_merge->getCollectionName());
 
-        $config_sync_merge = new ConfigStorage($storages, [], 'fr');
+        $config_sync_merge = new ConfigStorage($storages, 'fr');
         $this->assertSame('fr', $config_sync_merge->getCollectionName());
 
-        $config_sync_merge = new ConfigStorage($storages, [], 'lol');
+        $config_sync_merge = new ConfigStorage($storages, 'lol');
         $this->assertSame('lol', $config_sync_merge->getCollectionName());
     }
     /**

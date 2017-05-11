@@ -2,7 +2,6 @@
 
 namespace alexpott\ConfigSyncMerge;
 
-use alexpott\ConfigSyncMerge\DataAdapters\CoreExtension;
 use Drupal\Core\Config\FileStorage;
 use Drupal\Core\Config\StorageInterface;
 use Drupal\Core\Site\Settings;
@@ -46,8 +45,7 @@ class ConfigSyncMergeFactory {
         foreach ($this->settings->get('config_sync_merge_directories', []) as $directory) {
             $storages[$directory] = new FileStorage($directory);
         }
-        $adapters = [new CoreExtension()];
-        return new ConfigStorage($storages, $adapters);
+        return new ConfigStorage($storages);
     }
 
 }
