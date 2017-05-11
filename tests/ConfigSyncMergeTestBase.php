@@ -48,13 +48,13 @@ abstract class ConfigSyncMergeTestBase extends TestCase
     public function dataProviderTestListAll()
     {
         return [
-            [[], '', ['foo.bar']],
+            [[], '', ['core.extension', 'foo.bar']],
             [[], 'foo', ['foo.bar']],
             [[], 'bar', []],
-            [['merge1'], '', ['bar.foo', 'foo.bar']],
+            [['merge1'], '', ['bar.foo', 'core.extension', 'foo.bar']],
             [['merge1'], 'bar', ['bar.foo']],
             [['merge1'], 'baa', []],
-            [['merge1', 'merge2'], '', ['baa.baa', 'bar.foo', 'foo.bar']],
+            [['merge1', 'merge2'], '', ['baa.baa', 'bar.foo', 'core.extension', 'foo.bar']],
         ];
     }
 }
