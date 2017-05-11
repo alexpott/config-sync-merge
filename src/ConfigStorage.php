@@ -4,6 +4,8 @@ namespace alexpott\ConfigSyncMerge;
 
 use alexpott\ConfigSyncMerge\Exception\InvalidStorage;
 use alexpott\ConfigSyncMerge\Exception\UnsupportedMethod;
+use Drupal\config_filter\Config\FilteredStorage;
+use Drupal\config_sync_merge\Plugin\ConfigFilter\ConfigSyncMergeFilter;
 use Drupal\Core\Config\StorageInterface;
 
 /**
@@ -16,18 +18,11 @@ use Drupal\Core\Config\StorageInterface;
 class ConfigStorage implements StorageInterface {
 
     /**
-     * @var \Drupal\Core\Site\Settings
-     */
-    protected $settings;
-
-    /**
-     * Sync storages.
+     * The wrapped storage.
      *
-     * The first storage will always be core's sync storage.
-     *
-     * @var \Drupal\Core\Config\StorageInterface[]
+     * @var \Drupal\Core\Config\StorageInterface
      */
-    protected $storages = [];
+    protected $storage;
 
     /**
      * ConfigStorage constructor.
@@ -37,6 +32,7 @@ class ConfigStorage implements StorageInterface {
      * @throws \alexpott\ConfigSyncMerge\Exception\InvalidStorage
      */
     public function __construct(array $storages, $collection = StorageInterface::DEFAULT_COLLECTION) {
+        $filters = [];
         if (empty($storages)) {
             throw new InvalidStorage('ConfigStorage requires at least one storage to be passed to the constructor');
         }
@@ -48,8 +44,15 @@ class ConfigStorage implements StorageInterface {
             if ($storage->getCollectionName() !== $collection) {
                 $storages[$key] = $storage->createCollection($collection);
             }
+            if ($key) {
+              // Create a filter with all but the first storage.
+              // A filter is a plugin, but we don't care for its definition.
+              $filters[] = new ConfigSyncMergeFilter([], 'config_sync_merge', [], $storages[$key]);
+            }
         }
-        $this->storages = $storages;
+
+        // Set the first storage as the main one and the others as filters.
+        $this->storage = new FilteredStorage($storages[0], $filters);
     }
 
     /**
@@ -57,12 +60,7 @@ class ConfigStorage implements StorageInterface {
      */
     public function exists($name)
     {
-        foreach($this->storages as $storage) {
-            if ($storage->exists($name)) {
-                return TRUE;
-            }
-        }
-        return FALSE;
+        return $this->storage->exists($name);
     }
 
     /**
@@ -70,12 +68,7 @@ class ConfigStorage implements StorageInterface {
      */
     public function read($name)
     {
-        foreach($this->storages as $storage) {
-            if ($storage->exists($name)) {
-                return $storage->read($name);
-            }
-        }
-        return FALSE;
+        return $this->storage->read($name);
     }
 
     /**
@@ -83,13 +76,7 @@ class ConfigStorage implements StorageInterface {
      */
     public function readMultiple(array $names)
     {
-        $data = [];
-        foreach($this->storages as $storage) {
-            $names = array_diff($names, array_keys($data));
-            $data = array_merge($data, $storage->readMultiple($names));
-        }
-        ksort($data);
-        return $data;
+        return $this->storage->readMultiple($names);
     }
 
     /**
@@ -97,11 +84,7 @@ class ConfigStorage implements StorageInterface {
      */
     public function write($name, array $data)
     {
-        // Only need to write if data is different.
-        if ($this->read($name) === $data) {
-            return TRUE;
-        }
-        return $this->storages[0]->write($name, $data);
+        return $this->storage->write($name, $data);
     }
 
     /**
@@ -109,8 +92,7 @@ class ConfigStorage implements StorageInterface {
      */
     public function delete($name)
     {
-        // We only delete from the first storage.
-        return $this->storages[0]->delete($name);
+        return $this->storage->delete($name);
     }
 
     /**
@@ -126,7 +108,7 @@ class ConfigStorage implements StorageInterface {
      */
     public function encode($data)
     {
-        return $this->storages[0]->encode($data);
+        return $this->storage->encode($data);
     }
 
     /**
@@ -134,7 +116,7 @@ class ConfigStorage implements StorageInterface {
      */
     public function decode($raw)
     {
-        return $this->storages[0]->decode($raw);
+        return $this->storage->decode($raw);
     }
 
     /**
@@ -142,13 +124,7 @@ class ConfigStorage implements StorageInterface {
      */
     public function listAll($prefix = '')
     {
-        $list = [];
-        foreach($this->storages as $storage) {
-            $list = array_merge($list, $storage->listAll($prefix));
-        }
-        $list = array_unique($list);
-        sort($list);
-        return $list;
+        return $this->storage->listAll($prefix);
     }
 
     /**
@@ -156,8 +132,7 @@ class ConfigStorage implements StorageInterface {
      */
     public function deleteAll($prefix = '')
     {
-        // We only delete from the first storage.
-        return $this->storages[0]->deleteAll($prefix);
+        return $this->storage->deleteAll($prefix);
     }
 
     /**
@@ -165,10 +140,8 @@ class ConfigStorage implements StorageInterface {
      */
     public function createCollection($collection)
     {
-        return new static(
-            $this->storages,
-            $collection
-        );
+        // This will escape the decoration.
+        return $this->storage->createCollection($collection);
     }
 
     /**
@@ -176,13 +149,7 @@ class ConfigStorage implements StorageInterface {
      */
     public function getAllCollectionNames()
     {
-        $collections = [];
-        foreach($this->storages as $storage) {
-            $collections = array_merge($collections, $storage->getAllCollectionNames());
-        }
-        $collections = array_unique($collections);
-        sort($collections);
-        return $collections;
+        return $this->storage->getAllCollectionNames();
     }
 
     /**
@@ -190,7 +157,7 @@ class ConfigStorage implements StorageInterface {
      */
     public function getCollectionName()
     {
-        return $this->storages[0]->getCollectionName();
+        return $this->storage->getCollectionName();
     }
 
 }
