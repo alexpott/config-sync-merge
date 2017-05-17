@@ -72,6 +72,8 @@ class ConfigStorage implements StorageInterface {
     {
         foreach($this->storages as $storage) {
             if ($storage->exists($name)) {
+                // Return the data from the first storage where the
+                // configuration is found.
                 return $storage->read($name);
             }
         }
@@ -85,8 +87,14 @@ class ConfigStorage implements StorageInterface {
     {
         $data = [];
         foreach($this->storages as $storage) {
+            // Remove any already read configuration names from the list to
+            // read.
             $names = array_diff($names, array_keys($data));
-            $data = array_merge($data, $storage->readMultiple($names));
+            // Merge in any new data. Note that $data is the second argument to
+            // array_merge() to ensure that nothing is overwritten. This is
+            // unnecessary because of the line above but also reducing the
+            // amount of configuration to read is a performance optimisation.
+            $data = array_merge($storage->readMultiple($names), $data);
         }
         ksort($data);
         return $data;
@@ -101,6 +109,7 @@ class ConfigStorage implements StorageInterface {
         if ($this->read($name) === $data) {
             return TRUE;
         }
+        // Only write to the first storage.
         return $this->storages[0]->write($name, $data);
     }
 
