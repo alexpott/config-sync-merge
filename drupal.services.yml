@@ -4,6 +4,11 @@ services:
     factory: config_sync_merge.factory:getSync
     decorates: config.storage.staging
     public: false
+  plugin.manager.config_filter:
+    class: alexpott\ConfigSyncMerge\ConfigSyncMergeConfigFilterManager
+    arguments: ['@settings', '@config_sync_merge.config.storage.staging.inner']
+    tags:
+      - { name: config.filter }
   config_sync_merge.factory:
     class: alexpott\ConfigSyncMerge\ConfigSyncMergeFactory
     arguments: ['@settings', '@config_sync_merge.config.storage.staging.inner']

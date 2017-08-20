@@ -2,10 +2,11 @@
 
 namespace alexpott\ConfigSyncMerge;
 
+use alexpott\ConfigSyncMerge\ConfigFilter\ConfigSyncMergeFilter;
 use alexpott\ConfigSyncMerge\Exception\InvalidStorage;
 use alexpott\ConfigSyncMerge\Exception\UnsupportedMethod;
 use Drupal\config_filter\Config\FilteredStorage;
-use Drupal\config_sync_merge\Plugin\ConfigFilter\ConfigSyncMergeFilter;
+
 use Drupal\Core\Config\StorageInterface;
 
 /**
@@ -27,32 +28,42 @@ class ConfigStorage implements StorageInterface {
     /**
      * ConfigStorage constructor.
      *
-     * @param StorageInterface[] $storages
+     * @param StorageInterface[]|FilteredStorage $storages
      * @param string $collection
      * @throws \alexpott\ConfigSyncMerge\Exception\InvalidStorage
      */
-    public function __construct(array $storages, $collection = StorageInterface::DEFAULT_COLLECTION) {
-        $filters = [];
-        if (empty($storages)) {
-            throw new InvalidStorage('ConfigStorage requires at least one storage to be passed to the constructor');
+    public function __construct($storages, $collection = StorageInterface::DEFAULT_COLLECTION) {
+        if ($storages instanceof FilteredStorage) {
+            $this->storage = $storages;
         }
-        /** @var \Drupal\Core\Config\StorageInterface $storage */
-        foreach ($storages as $key => $storage) {
-            if (!($storage instanceof StorageInterface)) {
+        else {
+            // This is just to conform with what the tests set up.
+            // This class is only left here to satisfy the tests.
+            $filters = [];
+            if (empty($storages)) {
+                throw new InvalidStorage('ConfigStorage requires at least one storage to be passed to the constructor');
+            }
+            $main = array_shift($storages);
+            if (!($main instanceof StorageInterface)) {
                 throw new InvalidStorage('All storages must implement \Drupal\Core\Config\StorageInterface');
             }
-            if ($storage->getCollectionName() !== $collection) {
-                $storages[$key] = $storage->createCollection($collection);
+            if ($main->getCollectionName() !== $collection) {
+                $main = $main->createCollection($collection);
             }
-            if ($key) {
-              // Create a filter with all but the first storage.
-              // A filter is a plugin, but we don't care for its definition.
-              $filters[] = new ConfigSyncMergeFilter([], 'config_sync_merge', [], $storages[$key]);
-            }
-        }
+            foreach ($storages as $key => $storage) {
+                if (!($storage instanceof StorageInterface)) {
+                    throw new InvalidStorage('All storages must implement \Drupal\Core\Config\StorageInterface');
+                }
+                if ($storage->getCollectionName() !== $collection) {
+                    $storages[$key] = $storage->createCollection($collection);
+                }
 
-        // Set the first storage as the main one and the others as filters.
-        $this->storage = new FilteredStorage($storages[0], $filters);
+                $filters[] = new ConfigSyncMergeFilter($key, $storages[$key]);
+            }
+
+            // Set the first storage as the main one and the others as filters.
+            $this->storage = new FilteredStorage($main, $filters);
+        }
     }
 
     /**

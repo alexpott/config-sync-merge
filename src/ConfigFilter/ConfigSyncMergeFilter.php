@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\config_sync_merge\Plugin\ConfigFilter;
+namespace alexpott\ConfigSyncMerge\ConfigFilter;
 
 use Drupal\config_filter\Plugin\ConfigFilterBase;
 use Drupal\Core\Config\FileStorage;
@@ -10,17 +10,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides a ConfigSyncMergeFilter.
- *
- * @ConfigFilter(
- *   id = "config_sync_merge",
- *   label = @Translation("Config Sync Merge"),
- *   status = TRUE,
- *   weight = -10,
- *   storages = {"config.storage.sync"},
- *   deriver = "\Drupal\config_sync_merge\Plugin\ConfigFilter\ConfigSyncMergeFilterDeriver"
- * )
  */
-class ConfigSyncMergeFilter extends ConfigFilterBase implements ContainerFactoryPluginInterface {
+class ConfigSyncMergeFilter extends ConfigFilterBase {
 
   /**
    * The File storage to read the inherited data from.
@@ -32,30 +23,14 @@ class ConfigSyncMergeFilter extends ConfigFilterBase implements ContainerFactory
   /**
    * ConfigSyncMergeFilter constructor.
    *
-   * @param array $configuration
-   *   A configuration array containing information about the plugin instance.
    * @param string $plugin_id
    *   The plugin_id for the plugin instance.
-   * @param mixed $plugin_definition
-   *   The plugin implementation definition.
    * @param \Drupal\Core\Config\StorageInterface $storage
    *   The storage to read from.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, StorageInterface $storage) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition);
+  public function __construct($plugin_id, StorageInterface $storage) {
+    parent::__construct([], $plugin_id, []);
     $this->storage = $storage;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    return new static(
-      $configuration,
-      $plugin_id,
-      $plugin_definition,
-      new FileStorage($configuration['directory'])
-    );
   }
 
   /**
@@ -148,7 +123,7 @@ class ConfigSyncMergeFilter extends ConfigFilterBase implements ContainerFactory
    * {@inheritdoc}
    */
   public function filterCreateCollection($collection) {
-    return new static($this->configuration, $this->pluginId, $this->pluginDefinition, $this->storage->createCollection($collection));
+    return new static($this->pluginId, $this->storage->createCollection($collection));
   }
 
   /**

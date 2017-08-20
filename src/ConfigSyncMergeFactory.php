@@ -2,6 +2,8 @@
 
 namespace alexpott\ConfigSyncMerge;
 
+use alexpott\ConfigSyncMerge\ConfigFilter\ConfigSyncMergeFilter;
+use Drupal\config_filter\Config\FilteredStorage;
 use Drupal\Core\Config\FileStorage;
 use Drupal\Core\Config\StorageInterface;
 use Drupal\Core\Site\Settings;
@@ -41,11 +43,11 @@ class ConfigSyncMergeFactory {
      */
     public function getSync()
     {
-        $storages = [$this->coreSyncStorage];
-        foreach ($this->settings->get('config_sync_merge_directories', []) as $directory) {
-            $storages[$directory] = new FileStorage($directory);
-        }
-        return new ConfigStorage($storages);
+        $manager = new ConfigSyncMergeConfigFilterManager($this->settings);
+        // Create the ConfigStorage with the filtered storage already.
+        // This bypasses the setup needed for the tests and tests
+        // ConfigSyncMergeConfigFilterManager instead.
+        return new ConfigStorage(new FilteredStorage($this->coreSyncStorage, $manager->getFiltersForStorages(['config.storage.sync'])));
     }
 
 }
